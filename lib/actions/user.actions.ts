@@ -138,3 +138,45 @@ export async function fetchUsers({
     throw new Error(`Failed to fetch users: ${error.message}`);
   }
 }
+
+export async function getActivity(userId: string) {
+  try {
+    connectToDB();
+
+    //find all threads created by this user
+    const userThreads = await Thread.find({ author: userId });
+
+    //collect all the child threads ids from the children fields
+
+    const childThreadIds = userThreads.reduce((acc, userThread) => {
+      return acc.concat(userThread.children);
+    },[]);
+
+    const replies = await Thread.find({
+      _id: { $in: childThreadIds },
+      author: { $in: userId },
+    }).populate({
+      path: "author",
+      model: User,
+      select: "name image _id",
+    });
+
+    return replies;
+
+
+  } catch (error: any) {
+    throw new Error(`Failed to fetch activity: ${error.message}`);
+  }
+}
+
+// export async function fetchUserCommunities(userId: string) {
+//   try {
+//     connectToDB();
+
+//     const user = await User.findOne({ id: userId });
+
+//     return user.communities;
+//   } catch (error: any) {
+//     throw new Error(`Failed to fetch user communities: ${error.message}`);
+//   }
+// }
